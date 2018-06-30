@@ -1,0 +1,91 @@
+---
+title: "nike"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+nike<-read.csv(paste("activity.csv"),sep=",")
+```
+
+##Histogram
+```{r}
+steps<-aggregate(steps~date,nike,sum,na.rm=TRUE)
+hist(steps$steps,breaks=20)
+```
+
+```{r}
+steps<-aggregate(steps~date,nike,sum,na.rm=TRUE)
+mean<-mean(steps$steps)
+median<-median(steps$steps)
+mean
+median
+```
+
+##Time Series Plot 
+```{r}
+step<-aggregate(steps~interval,nike,FUN="mean",na.rm=TRUE)
+avgday<-aggregate(steps~date,nike,FUN="mean",na.rm=TRUE)
+
+plot(steps~interval,step,type="l")
+
+maxs<-step[which.max(step$steps),]$interval
+
+```
+The `r maxs` th interval has the max average steps
+
+###Imputing missing values in the main data
+
+```{r}
+s<-sum(is.na(nike$steps))
+s
+newnike<-nike
+avgdays<-function(interval){
+    avgday[step$interval==interval,]$steps
+}
+```
+Thus, there are `r s`NA entries in the original data.
+We can replace the NA value with the mean number of steps for that 5min time interval .
+
+
+```{r}
+c=0
+
+for(i in 1:nrow(newnike))
+{
+  if(is.na(newnike[i,]$steps))
+  {
+newnike[i,]$steps<-avgdays(newnike[i,]$interval)
+    c=c+1
+  }
+}
+c
+```
+
+###Histogram of new Data
+```{r}
+
+newsteps<-aggregate(steps~date,newnike,sum)
+hist(newsteps$steps)
+nmean<-mean(newsteps$steps)
+nmed<-median(newsteps$steps)
+```
+The new data mean is `r nmean`  
+The new data median is `r nmed`
+
+##Creating the weekday/ weekend column in the datasheet
+
+```{r}
+newnike$day=ifelse(as.POSIXlt(as.Date(newnike$date))$wday%%6==0,"weekend","weekday")
+```
+
+###Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+stepsInterval2=aggregate(steps~interval+day,newnike,FUN="mean")
+library(lattice)
+xyplot(steps~interval|factor(day),data=newnike,type="l")
+```
